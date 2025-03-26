@@ -99,61 +99,101 @@ class Add(Function):
 class Mul(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, b: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError("Need to implement for Task 2.3")
+        # Save inputs for backward pass
+        ctx.save_for_backward(a, b)
+        # Use the mul_zip function from the tensor backend
+        return a.f.mul_zip(a, b)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
-        # TODO: Implement for Task 2.4.
-        raise NotImplementedError("Need to implement for Task 2.4")
+        # Chain rule: If z = x * y, then dz/dx = y and dz/dy = x
+        a, b = ctx.saved_values
+        
+        # Compute gradients
+        grad_a = grad_output * b
+        grad_b = grad_output * a
+        
+        return grad_a, grad_b
 
 
 class Sigmoid(Function):
     @staticmethod
     def forward(ctx: Context, t1: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError("Need to implement for Task 2.3")
+        # Save input for backward pass
+        ctx.save_for_backward(t1)
+        # Use the sigmoid_map function from the tensor backend
+        return t1.f.sigmoid_map(t1)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.4.
-        raise NotImplementedError("Need to implement for Task 2.4")
+        # Chain rule: If z = sigmoid(x), then dz/dx = sigmoid(x) * (1 - sigmoid(x))
+        t1, = ctx.saved_values
+        
+        # Compute sigmoid(x)
+        sigmoid_t1 = t1.f.sigmoid_map(t1)
+        
+        # We need to use tensor operations instead of mixing Python scalars with tensors
+        # Create a tensor of ones with the same shape as sigmoid_t1
+        ones = sigmoid_t1.zeros(sigmoid_t1.shape)
+        ones = ones + 1.0  # Fill with ones
+        
+        # Compute sigmoid(x) * (1 - sigmoid(x))
+        sigmoid_derivative = sigmoid_t1 * (ones - sigmoid_t1)
+        
+        # Apply chain rule
+        return grad_output * sigmoid_derivative
 
 
 class ReLU(Function):
     @staticmethod
     def forward(ctx: Context, t1: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError("Need to implement for Task 2.3")
+        # Save input for backward pass
+        ctx.save_for_backward(t1)
+        # Use the relu_map function from the tensor backend
+        return t1.f.relu_map(t1)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.4.
-        raise NotImplementedError("Need to implement for Task 2.4")
+         # Chain rule: If z = ReLU(x), then dz/dx = 1 if x > 0, else 0
+        t1, = ctx.saved_values
+        
+        # Use the relu_back_zip function to compute the derivative
+        return t1.f.relu_back_zip(t1, grad_output)
 
 
 class Log(Function):
     @staticmethod
     def forward(ctx: Context, t1: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError("Need to implement for Task 2.3")
+        # Save input for backward pass
+        ctx.save_for_backward(t1)
+        # Use the log_map function from the tensor backend
+        return t1.f.log_map(t1)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.4.
-        raise NotImplementedError("Need to implement for Task 2.4")
+        # Chain rule: If z = log(x), then dz/dx = 1/x
+        t1, = ctx.saved_values
+        
+        # Use the log_back_zip function to compute the derivative
+        return t1.f.log_back_zip(t1, grad_output)
 
 
 class Exp(Function):
     @staticmethod
     def forward(ctx: Context, t1: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError("Need to implement for Task 2.3")
+        # Compute the result and save it for backward pass
+        result = t1.f.exp_map(t1)
+        ctx.save_for_backward(result)  # Save exp(t1) for backward
+        return result
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.4.
-        raise NotImplementedError("Need to implement for Task 2.4")
+        # Chain rule: If z = exp(x), then dz/dx = exp(x)
+        # Note: we saved exp(t1) in the forward pass
+        exp_t1, = ctx.saved_values
+        
+        # Apply chain rule
+        return grad_output * exp_t1
 
 
 class Sum(Function):
@@ -180,44 +220,56 @@ class All(Function):
 class LT(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, b: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError("Need to implement for Task 2.3")
+        return a.f.lt_zip(a, b)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
-        # TODO: Implement for Task 2.4.
-        raise NotImplementedError("Need to implement for Task 2.4")
+        return 0.0, 0.0
 
 
 class EQ(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, b: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError("Need to implement for Task 2.3")
+         return a.f.eq_zip(a, b)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
-        # TODO: Implement for Task 2.4.
-        raise NotImplementedError("Need to implement for Task 2.4")
+        return 0.0, 0.0
 
 
 class IsClose(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, b: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError("Need to implement for Task 2.3")
+        return a.f.is_close_zip(a, b)
 
 
 class Permute(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, order: Tensor) -> Tensor:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError("Need to implement for Task 2.3")
+         # Convert order tensor to a list of integers
+        order_list = [int(order[i].item()) for i in range(order.size)]
+        # Save the original order for backward pass
+        ctx.save_for_backward(order)
+        
+        # Use the permute method from TensorData
+        return minitorch.Tensor(a._tensor.permute(*order_list), backend=a.backend)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
-        # TODO: Implement for Task 2.4.
-        raise NotImplementedError("Need to implement for Task 2.4")
+        # To invert a permutation, we need to generate the inverse permutation
+        order, = ctx.saved_values
+        
+        # Convert order tensor to list
+        order_list = [int(order[i].item()) for i in range(order.size)]
+        
+        # Create inverse permutation
+        inv_order = [0] * len(order_list)
+        for i, j in enumerate(order_list):
+            inv_order[j] = i
+        
+        # Apply inverse permutation to gradient
+        permuted_grad = grad_output._tensor.permute(*inv_order)
+        return minitorch.Tensor(permuted_grad, backend=grad_output.backend), 0.0
 
 
 class View(Function):

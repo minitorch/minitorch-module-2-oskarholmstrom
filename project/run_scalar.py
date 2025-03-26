@@ -3,14 +3,30 @@ Be sure you have minitorch installed in you Virtual Env.
 >>> pip install -Ue .
 """
 import random
-
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 import minitorch
 
 
 class Network(minitorch.Module):
     def __init__(self, hidden_layers):
         super().__init__()
-        raise NotImplementedError("Need to include this file from past assignment.")
+        # Create a 3-layer neural network
+        # Input layer: 2 inputs (x_1, x_2)
+        # Hidden layer: 'hidden_layers' neurons
+        # Output layer: 1 output (prediction)
+        
+        # First layer - from 2 inputs to hidden_layers neurons
+        self.layer1 = Linear(2, hidden_layers)
+        
+        # Second layer - from hidden_layers neurons to hidden_layers neurons
+        self.layer2 = Linear(hidden_layers, hidden_layers)
+        
+        # Output layer - from hidden_layers neurons to 1 output
+        self.layer3 = Linear(hidden_layers, 1)
+
+
 
     def forward(self, x):
         middle = [h.relu() for h in self.layer1.forward(x)]
@@ -39,7 +55,18 @@ class Linear(minitorch.Module):
             )
 
     def forward(self, inputs):
-        raise NotImplementedError("Need to include this file from past assignment.")
+        # Compute the linear transformation: y = Wx + b
+        # Initialize outputs
+        outputs = [b.value for b in self.bias]
+        
+        # For each input and corresponding weights
+        for i, inp in enumerate(inputs):
+            # For each output dimension
+            for j in range(len(outputs)):
+                # Multiply input by weight and add to the output
+                outputs[j] = outputs[j] + inp * self.weights[i][j].value
+        
+        return outputs
 
 
 def default_log_fn(epoch, total_loss, correct, losses):
@@ -99,7 +126,12 @@ class ScalarTrain:
 
 if __name__ == "__main__":
     PTS = 50
-    HIDDEN = 2
     RATE = 0.5
-    data = minitorch.datasets["Simple"](PTS)
+    
+    #HIDDEN = 2
+    #data = minitorch.datasets["Simple"](PTS)
+    
+    data = minitorch.datasets["Xor"](PTS)
+    HIDDEN = 10
+    
     ScalarTrain(HIDDEN).train(data, RATE)
