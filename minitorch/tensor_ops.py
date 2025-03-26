@@ -268,8 +268,26 @@ def tensor_map(fn: Callable[[float], float]) -> Any:
         in_shape: Shape,
         in_strides: Strides,
     ) -> None:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError("Need to implement for Task 2.3")
+        out_index = np.zeros(len(out_shape), dtype=np.int32)
+        in_index = np.zeros(len(in_shape), dtype=np.int32)
+        
+        # Calculate the total size of the output tensor
+        out_size = np.prod(out_shape)
+        
+        # Iterate through all positions in the output tensor
+        for i in range(out_size):
+            # Convert flat position i to an index in the output tensor
+            to_index(i, out_shape, out_index)
+            
+            # Map the output index to an input index (broadcasting if needed)
+            broadcast_index(out_index, out_shape, in_shape, in_index)
+            
+            # Convert indices to positions in storage
+            out_pos = index_to_position(out_index, out_strides)
+            in_pos = index_to_position(in_index, in_strides)
+            
+            # Apply the function and store the result
+            out[out_pos] = fn(in_storage[in_pos])
 
     return _map
 
@@ -318,8 +336,29 @@ def tensor_zip(fn: Callable[[float, float], float]) -> Any:
         b_shape: Shape,
         b_strides: Strides,
     ) -> None:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError("Need to implement for Task 2.3")
+        out_index = np.zeros(len(out_shape), dtype=np.int32)
+        a_index = np.zeros(len(a_shape), dtype=np.int32)
+        b_index = np.zeros(len(b_shape), dtype=np.int32)
+        
+        # Calculate the total size of the output tensor
+        out_size = np.prod(out_shape)
+        
+        # Iterate through all positions in the output tensor
+        for i in range(out_size):
+            # Convert flat position i to an index in the output tensor
+            to_index(i, out_shape, out_index)
+            
+            # Map the output index to input indices (broadcasting if needed)
+            broadcast_index(out_index, out_shape, a_shape, a_index)
+            broadcast_index(out_index, out_shape, b_shape, b_index)
+            
+            # Convert indices to positions in storage
+            out_pos = index_to_position(out_index, out_strides)
+            a_pos = index_to_position(a_index, a_strides)
+            b_pos = index_to_position(b_index, b_strides)
+            
+            # Apply the function and store the result
+            out[out_pos] = fn(a_storage[a_pos], b_storage[b_pos])
 
     return _zip
 
@@ -354,8 +393,35 @@ def tensor_reduce(fn: Callable[[float, float], float]) -> Any:
         a_strides: Strides,
         reduce_dim: int,
     ) -> None:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError("Need to implement for Task 2.3")
+        out_index = np.zeros(len(out_shape), dtype=np.int32)
+        a_index = np.zeros(len(a_shape), dtype=np.int32)
+        
+        # Calculate the total size of the output tensor
+        out_size = np.prod(out_shape)
+        
+        # Iterate through all positions in the output tensor
+        for i in range(out_size):
+            # Convert flat position i to an index in the output tensor
+            to_index(i, out_shape, out_index)
+            
+            # Copy the output index to the input index
+            for j in range(len(out_index)):
+                a_index[j] = out_index[j]
+            
+            # Calculate the output position
+            out_pos = index_to_position(out_index, out_strides)
+            
+            # Reduce over the specified dimension
+            # For each value in the reduce dimension, apply the reduction function
+            for j in range(a_shape[reduce_dim]):
+                # Set the reduced dimension's index
+                a_index[reduce_dim] = j
+                
+                # Calculate the input position
+                a_pos = index_to_position(a_index, a_strides)
+                
+                # Apply the reduction function
+                out[out_pos] = fn(out[out_pos], a_storage[a_pos])
 
     return _reduce
 

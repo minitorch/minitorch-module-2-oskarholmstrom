@@ -22,7 +22,19 @@ def central_difference(f: Any, *vals: Any, arg: int = 0, epsilon: float = 1e-6) 
     Returns:
         An approximation of $f'_i(x_0, \ldots, x_{n-1})$
     """
-    raise NotImplementedError("Need to include this file from past assignment.")
+   # Create a list from the input values to allow modification
+    vals_list = list(vals)
+    
+    # Create values for f(x + epsilon) calculation
+    vals_plus = vals_list.copy()
+    vals_plus[arg] = vals_plus[arg] + epsilon
+    
+    # Create values for f(x - epsilon) calculation
+    vals_minus = vals_list.copy()
+    vals_minus[arg] = vals_minus[arg] - epsilon
+    
+    # Apply central difference formula: [f(x + epsilon) - f(x - epsilon)] / (2 * epsilon)
+    return (f(*vals_plus) - f(*vals_minus)) / (2 * epsilon)
 
 
 variable_count = 1
@@ -60,7 +72,33 @@ def topological_sort(variable: Variable) -> Iterable[Variable]:
     Returns:
         Non-constant Variables in topological order starting from the right.
     """
-    raise NotImplementedError("Need to include this file from past assignment.")
+    # Dictionary to track visited variables
+    visited = {}
+    
+    # List to store variables in topological order
+    topo_order = []
+    
+    def visit(var: Variable) -> None:
+        # Skip if variable is constant or already visited
+        if var.is_constant() or var.unique_id in visited:
+            return
+            
+        # Mark as visited with a temporary flag
+        visited[var.unique_id] = True
+        
+        # Visit all parents (dependencies) first
+        if hasattr(var, 'parents'):
+            for parent in var.parents:
+                visit(parent)
+        
+        # Add this variable to the order after all its dependencies
+        topo_order.append(var)
+    
+    # Start the traversal from the rightmost variable
+    visit(variable)
+    
+    # Return in reverse order (from rightmost/output to leftmost/input)
+    return topo_order
 
 
 def backpropagate(variable: Variable, deriv: Any) -> None:
@@ -74,8 +112,44 @@ def backpropagate(variable: Variable, deriv: Any) -> None:
 
     No return. Should write to its results to the derivative values of each leaf through `accumulate_derivative`.
     """
-    raise NotImplementedError("Need to include this file from past assignment.")
-
+     # Dictionary to keep track of variables we've processed
+    visited = {}
+    
+    # Dictionary to store derivatives for each variable
+    derivatives = {}
+    
+    # Start with the output variable and its derivative
+    derivatives[variable.unique_id] = deriv
+    
+    # Create a queue of variables to process
+    queue = [variable]
+    
+    while queue:
+        var = queue.pop(0)
+        
+        # Skip if already visited or is a constant
+        if var.unique_id in visited or var.is_constant():
+            continue
+        
+        visited[var.unique_id] = True
+        d_output = derivatives[var.unique_id]
+        
+        # If it's a leaf variable, accumulate the derivative
+        if var.is_leaf():
+            var.accumulate_derivative(d_output)
+        # Otherwise, propagate to its parents
+        elif not var.is_constant():
+            # Get parent variables and their gradients
+            for parent_var, grad in var.chain_rule(d_output):
+                # Add parent to queue if not already processed
+                if parent_var.unique_id not in visited:
+                    queue.append(parent_var)
+                
+                # Add/update gradient for parent
+                if parent_var.unique_id in derivatives:
+                    derivatives[parent_var.unique_id] += grad
+                else:
+                    derivatives[parent_var.unique_id] = grad
 
 @dataclass
 class Context:

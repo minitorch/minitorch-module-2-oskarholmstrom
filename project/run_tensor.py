@@ -21,8 +21,14 @@ class Network(minitorch.Module):
         self.layer3 = Linear(hidden_layers, 1)
 
     def forward(self, x):
-        # TODO: Implement for Task 2.5.
-        raise NotImplementedError("Need to implement for Task 2.5")
+        # Apply first linear layer followed by ReLU activation
+        h1 = self.layer1.forward(x).relu()
+        
+        # Apply second linear layer followed by ReLU activation
+        h2 = self.layer2.forward(h1).relu()
+        
+        # Apply final linear layer followed by sigmoid activation
+        return self.layer3.forward(h2).sigmoid()
 
 
 class Linear(minitorch.Module):
@@ -33,8 +39,29 @@ class Linear(minitorch.Module):
         self.out_size = out_size
 
     def forward(self, x):
-        # TODO: Implement for Task 2.5.
-        raise NotImplementedError("Need to implement for Task 2.5")
+        # Extract dimensions from input tensor
+        batch_size, in_features = x.shape
+        
+        # Reshape weights to allow broadcasting across the batch dimension
+        # Shape goes from (in_features, out_features) to (1, in_features, out_features)
+        reshaped_weights = self.weights.value.view(1, in_features, self.out_size)
+        
+        # Reshape input to prepare for element-wise multiplication with weights
+        # Shape goes from (batch_size, in_features) to (batch_size, in_features, 1)
+        reshaped_input = x.view(batch_size, in_features, 1)
+        
+        # Perform element-wise multiplication and sum along the input feature dimension (dim=1)
+        # This effectively computes the dot product for each sample and output feature
+        weighted_sum = (reshaped_weights * reshaped_input).sum(1)
+        
+        # Reshape the result to the expected output shape (batch_size, out_features)
+        output = weighted_sum.view(batch_size, self.out_size)
+        
+        # Reshape bias for broadcasting and add to the output
+        reshaped_bias = self.bias.value.view(self.out_size)
+        
+        # Return the final result with bias added
+        return output + reshaped_bias
 
 
 def default_log_fn(epoch, total_loss, correct, losses):
